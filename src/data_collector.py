@@ -1,9 +1,6 @@
 """
-Data Collector Module
-IBIT ETF and BTC spot prices (Yahoo Finance - change if better source)
-
-ETFs: IBIT, FBTC, GBTC, ARKB, BITB 
-Default: IBIT 
+Data Collector: IBIT ETF and BTC spot prices (Yahoo Finance - change if better source)
+ETFs: IBIT, FBTC, GBTC, ARKB, BITB. Default: IBIT 
 """
 
 import yfinance as yf
@@ -48,13 +45,8 @@ class DataCollector:
     }
     
     def __init__(self, etf_ticker='IBIT'):
-        """
-        Initialize the data collector
-        Parameters: 
-        etf_ticker : str
-            ETF ticker symbol (default: 'IBIT')
-            Supported: IBIT, FBTC, GBTC, ARKB, BITB
-        """ 
+        # Data Collector --> ETF ticker: IBIT, FBTC, GBTC, ARKB, BITB (default = IBIT)
+        
         self.etf_ticker = etf_ticker.upper()
         
         if self.etf_ticker in self.SUPPORTED_ETFS:
@@ -69,18 +61,8 @@ class DataCollector:
             print(f"Proceeding anyway...")
 
     def get_etf_data(self, start_date, end_date):
-        """ 
-        Get ETF data (Yahoo Finance)
+        # Get ETF Data (yahoo finance) 
 
-        Parameters: 
-         start_date : str or datetime
-            Start date for data collection
-        end_date : str or datetime
-            End date for data collection
-
-        Returns: 
-        pd.DataFrame : ETF price data with timestamp, close price, volume
-        """ 
         print(f"\nFetching {self.etf_ticker} data from {start_date} to {end_date}...")
 
         try: 
@@ -109,18 +91,8 @@ class DataCollector:
         
     
     def get_btc_spot_data(self, start_date, end_date):
-        """ 
-        Get BTC Spot price (Yahoo Finance): 
+        # Get BTC Spot price (yahoo finance)
 
-        Parameters:
-        start_date : str or datetime
-            Start date for data collection
-        end_date : str or datetime
-            End date for data collection
-
-        Returns: 
-        pd.DataFrame : BTC price data with timestamp, close price, volume
-        """ 
         print(f"Fetching BTC spot data from {start_date} to {end_date}...")
 
         try: 
@@ -147,18 +119,7 @@ class DataCollector:
 
     
     def merge_data(self, start_date, end_date):
-        """ 
-        Merge ETF and BTC data on timestamp 
-
-        Parameters: 
-        start_date : str or datetime
-            Start date for data collection
-        end_date : str or datetime
-            End date for data collection
-
-        Returns:
-        pd.DataFrame : Merged dataset with ETF and BTC prices
-        """ 
+        # Merge ETF and BTC data 
 
         print("\n" + "="*60)
         print(f"Starting data collection for {self.etf_ticker}...")
@@ -195,15 +156,7 @@ class DataCollector:
 
     
     def save_data(self, df, filename=None):
-        """ 
-        Save data 
-        Parameters: 
-        df : pd.DataFrame
-            Data to save
-        filename : str, optional
-            Output filename. If None, auto-generates based on ETF ticker
-        """ 
-
+        
         if df.empty:
             print("No data to save")
             return
