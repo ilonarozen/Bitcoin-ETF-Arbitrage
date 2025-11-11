@@ -19,7 +19,7 @@ class IntradayBacktester:
     - Can take multiple positions per day
     """
     
-    def __init__(self, initial_capital=1000000, position_size=0.1, max_holding_bars=4):
+    def __init__(self, initial_capital=1000000, position_size=0.001, max_holding_bars=4):
         """
         Initialize the intraday backtester
         
@@ -303,7 +303,7 @@ if __name__ == "__main__":
     
     # Configuration
     INITIAL_CAPITAL = 1000000   # $1M
-    POSITION_SIZE = 0.1          # 10% of capital per trade
+    POSITION_SIZE = 0.001          # 0.1% of capital per trade
     MAX_HOLDING_BARS = 4         # Max 1 hour (4 x 15min bars)
     
     # Create backtester
@@ -345,14 +345,25 @@ if __name__ == "__main__":
     # Save trades to file
     if not trades_df.empty:
         trades_df.to_csv('results/intraday_trades.csv', index=False)
-        print(f"\n✓ Trade history saved to results/intraday_trades.csv")
-        
-        # Show sample trades
-        print("\n" + "="*70)
-        print("SAMPLE INTRADAY TRADES:")
-        print("="*70)
-        cols_to_show = ['entry_time', 'exit_time', 'signal', 'holding_minutes', 'return_pct', 'pnl']
-        print(trades_df[cols_to_show].head(10))
-    
-    print("\n✓ Intraday backtest complete!")
-    
+        print("\n✓ Trade history saved to results/intraday_trades.csv")
+
+    # Show ALL trades instead of sample
+    print("\n" + "=" * 70)
+    print("ALL INTRADAY TRADES:")
+    print("=" * 70 + "\n")
+
+    import pandas as pd
+    pd.set_option("display.max_rows", None)
+    pd.set_option("display.max_columns", None)
+    pd.set_option("display.width", 150)
+
+    cols_to_show = ['entry_time', 'exit_time', 'signal', 'holding_minutes', 'return_pct', 'pnl']
+    print(trades_df[cols_to_show].to_string(index=False))
+
+    # (optionnel) reset les paramètres d'affichage
+    pd.reset_option("display.max_rows")
+    pd.reset_option("display.max_columns")
+    pd.reset_option("display.width")
+
+    print("\nIntraday backtest complete!")
+
