@@ -31,13 +31,13 @@ class SpreadCalculator:
             raise ValueError(f"Column '{etf_col}' not found. Available: {df.columns.tolist()}")
 
         # Calculate the BTC/share 
-        # Calculate the ratio to normalize ETF price to BTC-equivalent
+        # Calculate the ratio to normalize ETF price to BTC
         avg_ratio = (df[etf_col] / df['btc_close']).mean()
         
         print(f"\nCalculating spreads...")
         print(f"  Average {self.etf_ticker}/BTC ratio: {avg_ratio:.6f}")
         
-        # Normalize ETF price to BTC-equivalent
+        # Normalize ETF price to BTC
         df['etf_btc_equivalent'] = df[etf_col] / avg_ratio
         
         # Calculate spread
@@ -201,5 +201,3 @@ if __name__ == "__main__":
     print(df[['timestamp', 'ibit_close', 'btc_close', 'spread_bps', 'net_spread_bps', 'signal']].head())
     
     print("\n✓ Spread calculation complete!")
-
-    

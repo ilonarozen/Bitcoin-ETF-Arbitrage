@@ -36,3 +36,6 @@ Thumbs.db
 *.swp
 *.swo
 *~
+
+# API Keys (NEVER COMMIT)
+config/alpaca_config.py
