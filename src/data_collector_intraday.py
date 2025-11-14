@@ -27,19 +27,17 @@ class IntradayDataCollector:
 
         print("IntradayDataCollector initialized")
         print(f"  ETF: {self.etf_ticker}")
-        print("  Timeframe: 15-minute bars")
+        print("  Timeframe: 15 minutes ")
         print("  Sources: Alpaca IEX (ETF) + Coinbase (BTC)")
 
-    # ------------------------------------------------------------------ #
+
     # ETF DATA (ALPACA)
-    # ------------------------------------------------------------------ #
     def get_etf_intraday_data(self, start_date, end_date):
-        """IBIT intraday data from Alpaca (15min bars, US market hours)."""
 
         print(f"\nFetching {self.etf_ticker} intraday data from Alpaca...")
         print(f"  Period: {start_date.date()} to {end_date.date()}")
 
-        # Format dates for Alpaca API (ISO 8601)
+        # Format dates for Alpaca (ISO 8601)
         start_str = start_date.strftime('%Y-%m-%dT%H:%M:%SZ')
         end_str   = end_date.strftime('%Y-%m-%dT%H:%M:%SZ')
 
@@ -80,11 +78,10 @@ class IntradayDataCollector:
             }
         )
 
-        # Timestamps Alpaca -> UTC puis convertis en heure de New York
+        # Timestamps Alpaca -> UTC and -> NY Time
         df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
         ts_ny = df["timestamp"].dt.tz_convert("America/New_York")
 
-        # Filtre sur les heures de marché US en heure de New York
         df["hour"] = ts_ny.dt.hour
         df["minute"] = ts_ny.dt.minute
 
@@ -110,18 +107,9 @@ class IntradayDataCollector:
         ]
 
 
-    # ------------------------------------------------------------------ #
     # BTC DATA (COINBASE)
-    # ------------------------------------------------------------------ #
-
-        # BTC DATA (COINBASE) ------------------------------------------------ #
     def get_btc_intraday_data(self, start_date, end_date):
-        """
-        BTC Data (Coinbase Exchange API) - 15min candles on BTC-USD.
-        On utilise l'API publique :
-        GET https://api.exchange.coinbase.com/products/BTC-USD/candles
-        granularity = 900s (15 minutes).
-        """
+        # BTC Data on API - 15min candles
 
         print(f"\nFetching BTC intraday data from Coinbase Exchange...")
         print(f"  Period: {start_date.date()} to {end_date.date()}")
@@ -129,16 +117,14 @@ class IntradayDataCollector:
         product_id = "BTC-USD"
         url = f"https://api.exchange.coinbase.com/products/{product_id}/candles"
 
-        granularity = 900  # 15 minutes in seconds
+        granularity = 900  # 15min 
 
-        # Coinbase limite le nombre de buckets par requête (~300).
         max_buckets_per_call = 300
         window = timedelta(seconds=granularity * max_buckets_per_call)
 
         all_candles = []
         current_start = start_date
 
-        # On boucle par fenêtres successives pour couvrir toute la période
         while current_start < end_date:
             current_end = min(current_start + window, end_date)
 
@@ -165,7 +151,7 @@ class IntradayDataCollector:
             current_start = current_end
 
         if not all_candles:
-            print("  Warning: No BTC data returned from Coinbase")
+            print(" No BTC data returned from Coinbase")
             return pd.DataFrame()
 
         df = pd.DataFrame(
@@ -173,7 +159,7 @@ class IntradayDataCollector:
             columns=["time", "btc_low", "btc_high", "btc_open", "btc_close", "btc_volume"],
         )
 
-        # Coinbase renvoie du plus récent au plus ancien → on trie
+        # Coinbase: from newest to oldest -> sort
         df["timestamp"] = pd.to_datetime(df["time"], unit="s")
         df["btc_close"] = df["btc_close"].astype(float)
         df["btc_open"] = df["btc_open"].astype(float)
@@ -196,12 +182,10 @@ class IntradayDataCollector:
             ]
         ]
 
-    # ------------------------------------------------------------------ #
-    # MERGE + SAVE
-    # ------------------------------------------------------------------ #
 
+    # MERGE + SAVE
     def merge_intraday_data(self, start_date, end_date):
-        """Merge ETF and BTC intraday data on 15min timestamps."""
+        # Merge ETF and BTC intraday data on 15min timestamps
 
         print("\n" + "=" * 70)
         print(f"COLLECTING INTRADAY DATA FOR {self.etf_ticker}")
@@ -214,11 +198,9 @@ class IntradayDataCollector:
             print("Could not fetch data. Check APIs and dates.")
             return pd.DataFrame()
 
-        # Nettoyage timezone
         etf_df["timestamp"] = pd.to_datetime(etf_df["timestamp"]).dt.tz_localize(None)
         btc_df["timestamp"] = pd.to_datetime(btc_df["timestamp"]).dt.tz_localize(None)
 
-        # On arrondit les deux sur la même grille 15min
         etf_df["timestamp_rounded"] = etf_df["timestamp"].dt.floor("15min")
         btc_df["timestamp_rounded"] = btc_df["timestamp"].dt.floor("15min")
 
@@ -230,7 +212,7 @@ class IntradayDataCollector:
             suffixes=("_etf", "_btc"),
         )
 
-        # Garder le timestamp ETF (heures de marché US)
+        # Timestamp ETF 
         merged["timestamp"] = merged["timestamp_etf"]
         merged = merged.drop(["timestamp_etf", "timestamp_btc", "timestamp_rounded"], axis=1)
 
@@ -262,16 +244,15 @@ class IntradayDataCollector:
         print(f"  Columns: {list(df.columns)}")
 
 
-# ---------------------------------------------------------------------- #
 # TEST SCRIPT
-# ---------------------------------------------------------------------- #
+
 if __name__ == "__main__":
     print("=" * 70)
-    print("BITCOIN ETF-SPOT ARBITRAGE - DATA COLLECTOR (15min)")
+    print("BITCOIN ETF-SPOT ARBITRAGE - DATA COLLECTOR")
     print("=" * 70 + "\n")
 
-    ETF_TICKER = "IBIT"
-    DAYS_TO_FETCH = 30  # Last 30 days
+    ETF_TICKER = "IBIT" # CHOOSE ETF: IBIT 
+    DAYS_TO_FETCH = 30  # CHOOSE NB OF DAYS: 30 last days
 
     collector = IntradayDataCollector(etf_ticker=ETF_TICKER)
 
@@ -292,4 +273,5 @@ if __name__ == "__main__":
         print("=" * 70)
         print(data.head(10))
 
-    print("\n✓ Intraday data collection complete!")
+    print("\n✓ End")
+

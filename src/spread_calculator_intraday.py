@@ -1,23 +1,15 @@
-"""
-Intraday Spread Calculator (15-minute bars)
-Calculates spreads between Bitcoin ETF and BTC spot prices on intraday data
-Identifies arbitrage opportunities throughout the trading day
-"""
+# Intraday Spread Calculator (15 min)
+# Calculates spread between ETF and BTC Spot and identify arbitrage opportunities 
 
 import pandas as pd
 import numpy as np
 
 
 class IntradaySpreadCalculator:
-    """
-    Calculate spreads between ETF and BTC spot prices on 15-minute bars
-    Generate trading signals based on net spread after costs
-    """
+    # Calculate spreads beween ETF and BTC (15 min) and generate trading signals 
 
     def __init__(self, etf_ticker="IBIT", threshold_bps=15):
-        """
-        Initialize the intraday spread calculator
-        """
+        # Initialization
         self.etf_ticker = etf_ticker.upper()
         self.threshold_bps = threshold_bps
 
@@ -26,14 +18,11 @@ class IntradaySpreadCalculator:
         print(f"  Signal threshold: {self.threshold_bps} bps")
         print("  Timeframe: 15-minute bars")
 
-    # -------------------------------------------------------- #
     # SPREAD CALCULATIONS
-    # -------------------------------------------------------- #
 
     def calculate_raw_spread(self, df):
-        """
-        Spread (bps) = ((ETF_price_normalized - BTC_price) / BTC_price) * 10,000
-        """
+        # Spread = ((ETF_price_normalized - BTC_price) / BTC_price) * 10,000
+        
         etf_col = f"{self.etf_ticker.lower()}_close"
 
         if etf_col not in df.columns:
@@ -41,16 +30,16 @@ class IntradaySpreadCalculator:
                 f"Column '{etf_col}' not found. Available: {df.columns.tolist()}"
             )
 
-        # Average ratio ETF/BTC to normalize ETF price
+        # Average ratio ETF/BTC 
         avg_ratio = (df[etf_col] / df["btc_close"]).mean()
 
-        print("\nCalculating intraday spreads...")
+        print("\nCalculating spreads...")
         print(f"  Average {self.etf_ticker}/BTC ratio: {avg_ratio:.6f}")
 
         # Normalize ETF price to BTC equivalent
         df["etf_btc_equivalent"] = df[etf_col] / avg_ratio
 
-        # Spread in basis points
+        # Spread
         df["spread_bps"] = (
             (df["etf_btc_equivalent"] - df["btc_close"]) / df["btc_close"]
         ) * 10000
@@ -65,25 +54,22 @@ class IntradaySpreadCalculator:
         return df
 
     def calculate_trading_costs(self):
-        """
-        Estimate trading costs for intraday arbitrage (round-trip)
-        Returns total cost in bps
-        """
+        # trading costs for intraday arbitrage, total costs (bps)
+        
         # ETF costs
-        etf_commission = 0.3  # bps
-        etf_spread = 0.5  # bps
+        etf_commission = 0.3  
+        etf_spread = 0.5  
 
         # BTC spot costs
-        btc_fees = 1.5  # bps
-        btc_spread = 2.0  # bps
+        btc_fees = 1.5  
+        btc_spread = 2.0  
 
         total_cost = etf_commission + etf_spread + btc_fees + btc_spread
         return total_cost
 
     def calculate_net_spread(self, df):
-        """
-        Net Spread = Raw Spread - Trading Costs
-        """
+        # Net Spread = Raw Spread - Trading Costs
+
         costs = self.calculate_trading_costs()
 
         df["costs_bps"] = costs
@@ -95,9 +81,8 @@ class IntradaySpreadCalculator:
 
         return df
 
-    # -------------------------------------------------------- #
+
     # SIGNALS
-    # -------------------------------------------------------- #
 
     def generate_signals(self, df):
         """
@@ -107,12 +92,12 @@ class IntradaySpreadCalculator:
 
         df["signal"] = "HOLD"
 
-        # ETF overpriced relative to BTC → Long BTC + Short ETF
+        # ETF overpriced -> Long BTC + Short ETF
         df.loc[df["net_spread_bps"] > self.threshold_bps, "signal"] = (
             "LONG_BTC_SHORT_ETF"
         )
 
-        # ETF underpriced relative to BTC → Short BTC + Long ETF
+        # ETF underpriced -> Short BTC + Long ETF
         df.loc[df["net_spread_bps"] < -self.threshold_bps, "signal"] = (
             "SHORT_BTC_LONG_ETF"
         )
@@ -128,31 +113,24 @@ class IntradaySpreadCalculator:
 
         return df
 
-    # -------------------------------------------------------- #
+
     # FEATURES & STATS
-    # -------------------------------------------------------- #
 
     def add_time_features(self, df):
-        #def add_time_features(self, df):
-        """
-        Add time-of-day and session labels (in New York time).
-        """
 
-        # 1) Lire le timestamp en UTC
+        # Read timestamp (UTC)
         df["timestamp"] = pd.to_datetime(df["timestamp"], utc=True)
 
-        # 2) Convertir en heure de New York (ET)
+        # Convert to NY time
         df["timestamp"] = df["timestamp"].dt.tz_convert("America/New_York")
 
-        # 3) Enlever l'info de timezone pour avoir un datetime "propre"
         df["timestamp"] = df["timestamp"].dt.tz_localize(None)
 
-        # 4) Extraire heure / minute à partir de l'heure NY
+        # Extract hour, min from NY time 
         df["hour"] = df["timestamp"].dt.hour
         df["minute"] = df["timestamp"].dt.minute
         df["time_of_day"] = df["hour"] + df["minute"] / 60.0
 
-        # 5) Labels de session (en heure NY)
         df["session"] = "midday"
         df.loc[df["hour"] == 9, "session"] = "open"
         df.loc[df["hour"] >= 15, "session"] = "close"
@@ -160,9 +138,8 @@ class IntradaySpreadCalculator:
         return df
 
     def analyze_spreads(self, df):
-        """
-        Basic statistics on spreads and net spreads
-        """
+        # Statistics analysis 
+
         stats = {
             "total_bars": len(df),
             "mean_spread_bps": df["spread_bps"].mean(),
@@ -182,18 +159,17 @@ class IntradaySpreadCalculator:
 
         return stats
 
-    # -------------------------------------------------------- #
+
     # FULL PIPELINE
-    # -------------------------------------------------------- #
 
     def process_data(
         self,
         input_file="data/ibit_btc_intraday_15min.csv",
         output_file="data/analyzed_intraday_data.csv",
     ):
-        """
-        Load data, calculate spreads, generate signals, save analyzed file
-        """
+
+        # Load data, calculate spreads, generate signals
+
         print("\n" + "=" * 70)
         print(f"INTRADAY SPREAD ANALYSIS - {self.etf_ticker}")
         print("=" * 70)
@@ -218,15 +194,14 @@ class IntradaySpreadCalculator:
         return df, stats
 
 
-# ---------------------------------------------------------------------- #
-# TEST SCRIPT
-# ---------------------------------------------------------------------- #
+# TEST 
+
 if __name__ == "__main__":
     print("=" * 70)
     print("BITCOIN ETF-SPOT ARBITRAGE - INTRADAY SPREAD CALCULATOR")
     print("=" * 70 + "\n")
 
-    ETF_TICKER = "IBIT" #CHOOSE
+    ETF_TICKER = "IBIT" #CHOOSE ETF: IBIT 
     THRESHOLD_BPS = 15  #CHOOSE
 
     calculator = IntradaySpreadCalculator(
@@ -253,7 +228,6 @@ if __name__ == "__main__":
         print("ALL INTRADAY ARBITRAGE OPPORTUNITIES:")
         print("=" * 70 + "\n")
 
-        # Afficher toutes les lignes sans couper
         pd.set_option("display.max_rows", None)
         pd.set_option("display.max_columns", None)
         pd.set_option("display.width", 150)
@@ -264,13 +238,12 @@ if __name__ == "__main__":
             ].to_string(index=False)
         )
 
-        # (optionnel) reset les options pandas ensuite
         pd.reset_option("display.max_rows")
         pd.reset_option("display.max_columns")
         pd.reset_option("display.width")
 
     else:
-        print("\n⚠️  No arbitrage opportunities found with current threshold")
+        print("No arbitrage opportunities found with current threshold")
 
     print("\n" + "=" * 70)
     print("PREVIEW OF ANALYZED INTRADAY DATA:")
@@ -285,4 +258,5 @@ if __name__ == "__main__":
     ]
     print(df[cols_to_show].head())
 
-    print("\n✓ Intraday spread calculation complete!")
+    print("End")
+    

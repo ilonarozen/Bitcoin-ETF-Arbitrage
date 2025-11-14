@@ -1,37 +1,20 @@
-"""
-Intraday Backtest Module (15-minute bars)
-Simulates the arbitrage trading strategy on intraday data
-Calculates PnL, win rate, and performance metrics for intraday trading
-"""
+# Backtest
+# Simulates the arb trading strat, calculates PnL, win rate, and perf metrics 
 
 import pandas as pd
 import numpy as np
 from datetime import datetime, timedelta
 
 class IntradayBacktester:
-    """
-    Backtest the ETF-spot arbitrage strategy on 15-minute intraday data
-    
-    Strategy:
-    - Enter position when signal is triggered (net spread > threshold)
-    - Hold for short duration (15-60 minutes) OR until spread converges
-    - Exit and calculate profit/loss
-    - Can take multiple positions per day
-    """
+    # Backtest the ETF - BTC Sport arb strategy 
+    # Strategy: 
+    #   - enter position when signal is triggered (net spread > threshold)
+    #   - hold for short duration OR until spread converges 
+    #   - exit and calculate PnL 
     
     def __init__(self, initial_capital=1000000, position_size=0.001, max_holding_bars=4):
-        """
-        Initialize the intraday backtester
+        # initialization
         
-        Parameters:
-        -----------
-        initial_capital : float
-            Starting capital in USD (default: $1M)
-        position_size : float
-            Fraction of capital to use per trade (default: 0.1 = 10%)
-        max_holding_bars : int
-            Maximum number of 15-min bars to hold a position (default: 4 = 1 hour)
-        """
         self.initial_capital = initial_capital
         self.capital = initial_capital
         self.position_size = position_size
@@ -45,20 +28,8 @@ class IntradayBacktester:
         print(f"  Max holding time: {self.max_holding_bars} bars ({self.max_holding_bars * 15} minutes)")
     
     def enter_position(self, row, index):
-        """
-        Enter a new trading position
+        # Enter a new trading position
         
-        Parameters:
-        -----------
-        row : pd.Series
-            Data row with signal and prices
-        index : int
-            Row index in dataframe
-            
-        Returns:
-        --------
-        dict : Position details
-        """
         trade_amount = self.capital * self.position_size
         
         position = {
@@ -75,38 +46,22 @@ class IntradayBacktester:
         return position
     
     def exit_position(self, position, row, index):
-        """
-        Exit a trading position and calculate PnL
+        # Exit a trading position and calculate PnL 
         
-        Parameters:
-        -----------
-        position : dict
-            Open position to exit
-        row : pd.Series
-            Current data row with prices
-        index : int
-            Current row index
-            
-        Returns:
-        --------
-        dict : Completed trade with PnL
-        """
-        # Calculate returns based on strategy
+        # Calculate returns 
         if position['signal'] == 'LONG_BTC_SHORT_ETF':
-            # We bought BTC and sold ETF (betting spread will narrow)
             btc_return = (row['btc_close'] - position['btc_entry']) / position['btc_entry']
             etf_return = (row['ibit_close'] - position['ibit_entry']) / position['ibit_entry']
             strategy_return = btc_return - etf_return
             
         elif position['signal'] == 'SHORT_BTC_LONG_ETF':
-            # We sold BTC and bought ETF (betting spread will narrow from negative)
             etf_return = (row['ibit_close'] - position['ibit_entry']) / position['ibit_entry']
             btc_return = (row['btc_close'] - position['btc_entry']) / position['btc_entry']
             strategy_return = etf_return - btc_return
         else:
             strategy_return = 0
         
-        # Calculate PnL in dollars
+        # Calculate PnL
         pnl = position['trade_amount'] * strategy_return
         
         # Calculate holding time
@@ -132,34 +87,13 @@ class IntradayBacktester:
             'holding_minutes': holding_minutes
         }
         
-        # Update capital
         self.capital += pnl
         
         return trade
     
     def should_exit_position(self, position, row, index):
-        """
-        Determine if position should be exited
-        
-        Exit conditions for intraday:
-        1. Spread has converged (abs(spread) < 5 bps)
-        2. Held for max duration (e.g., 4 bars = 1 hour)
-        3. Spread reversed significantly (moved against us by 20+ bps)
-        4. End of day approaching (after 15:45)
-        
-        Parameters:
-        -----------
-        position : dict
-            Current open position
-        row : pd.Series
-            Current data row
-        index : int
-            Current row index
-            
-        Returns:
-        --------
-        bool : True if should exit
-        """
+        # Determine if position should be exited: 
+        # Exit conditions: 
         # Condition 1: Spread converged (good exit)
         if abs(row['net_spread_bps']) < 5:
             return True
@@ -172,12 +106,12 @@ class IntradayBacktester:
         # Condition 3: Spread reversed significantly (stop loss)
         spread_change = position['entry_spread_bps'] - row['net_spread_bps']
         if position['signal'] == 'LONG_BTC_SHORT_ETF':
-            # We want spread to decrease (converge from positive)
+            # We want spread to decrease 
             if spread_change < -20:  # Spread widened by 20+ bps
                 return True
         elif position['signal'] == 'SHORT_BTC_LONG_ETF':
-            # We want spread to increase (converge from negative)
-            if spread_change > 20:  # Spread widened by 20+ bps
+            # We want spread to increase
+            if spread_change > 20:  
                 return True
         
         # Condition 4: End of day approaching (force exit)
@@ -187,19 +121,8 @@ class IntradayBacktester:
         return False
     
     def run_backtest(self, df):
-        """
-        Run the backtest on intraday data
-        
-        Parameters:
-        -----------
-        df : pd.DataFrame
-            DataFrame with signals and prices (15-min bars)
-            
-        Returns:
-        --------
-        dict : Performance metrics
-        pd.DataFrame : Trade history
-        """
+        # Run backtest 
+
         print("\n" + "="*70)
         print("RUNNING INTRADAY BACKTEST")
         print("="*70 + "\n")
@@ -214,11 +137,11 @@ class IntradayBacktester:
                     self.trades.append(trade)
                     self.current_position = None
                     
-                    # Print trade result
+                    # Trade result
                     profit_str = f"+${trade['pnl']:,.2f}" if trade['pnl'] > 0 else f"-${abs(trade['pnl']):,.2f}"
                     print(f"✓ Trade closed: {trade['signal'][:15]} | {trade['holding_minutes']}min | {profit_str} ({trade['return_pct']:.3f}%)")
             
-            # Check if we should enter a new position (only if not already in one)
+            # Check if we should enter a new position (if not already in one)
             if self.current_position is None and row['signal'] != 'HOLD':
                 self.current_position = self.enter_position(row, idx)
                 print(f"\n→ Opened: {row['signal']} at {row['timestamp']} | Spread: {row['net_spread_bps']:.2f} bps")
@@ -236,13 +159,8 @@ class IntradayBacktester:
         return metrics, pd.DataFrame(self.trades)
     
     def calculate_metrics(self):
-        """
-        Calculate performance metrics
-        
-        Returns:
-        --------
-        dict : Performance metrics
-        """
+        # calculate perf metrics
+
         if not self.trades:
             return {
                 'total_trades': 0,
@@ -268,10 +186,10 @@ class IntradayBacktester:
         total_pnl = trades_df['pnl'].sum()
         total_return_pct = (self.capital - self.initial_capital) / self.initial_capital * 100
         
-        # Sharpe ratio (annualized for intraday)
+        # Sharpe ratio
         if len(trades_df) > 1:
             returns = trades_df['return_pct'] / 100
-            # Assuming ~26 bars per day, 252 trading days
+            # Assume ~26 bars per day, 252 trading days
             sharpe_ratio = (returns.mean() / returns.std()) * np.sqrt(26 * 252) if returns.std() > 0 else 0
         else:
             sharpe_ratio = 0
@@ -295,25 +213,25 @@ class IntradayBacktester:
         return metrics
 
 
-# Test the module
+# TEST
 if __name__ == "__main__":
     print("="*70)
     print("BITCOIN ETF-SPOT ARBITRAGE - INTRADAY BACKTEST")
     print("="*70 + "\n")
     
-    # Configuration
-    INITIAL_CAPITAL = 1000000   # $1M
-    POSITION_SIZE = 0.001          # 0.1% of capital per trade
-    MAX_HOLDING_BARS = 4         # Max 1 hour (4 x 15min bars)
+    # Config
+    INITIAL_CAPITAL = 1000000   # CHOOSE: $1M
+    POSITION_SIZE = 0.001       # 0.1% of capital per trade
+    MAX_HOLDING_BARS = 4        # Max 1 hour (4 x 15min bars)
     
-    # Create backtester
+    # Create backtest
     backtester = IntradayBacktester(
         initial_capital=INITIAL_CAPITAL,
         position_size=POSITION_SIZE,
         max_holding_bars=MAX_HOLDING_BARS
     )
     
-    # Load analyzed data
+    # Load data
     print("\nLoading analyzed intraday data...")
     df = pd.read_csv('data/analyzed_intraday_data.csv')
     print(f"✓ Loaded {len(df)} bars")
@@ -323,7 +241,7 @@ if __name__ == "__main__":
     # Run backtest
     metrics, trades_df = backtester.run_backtest(df)
     
-    # Display results
+    # Results
     print("\n" + "="*70)
     print("INTRADAY BACKTEST RESULTS")
     print("="*70 + "\n")
@@ -342,12 +260,11 @@ if __name__ == "__main__":
     print(f"Max Loss:               ${metrics['max_loss']:,.2f}")
     print(f"\nSharpe Ratio:           {metrics['sharpe_ratio']:.2f}")
     
-    # Save trades to file
     if not trades_df.empty:
         trades_df.to_csv('results/intraday_trades.csv', index=False)
         print("\n✓ Trade history saved to results/intraday_trades.csv")
 
-    # Show ALL trades instead of sample
+    # All trades 
     print("\n" + "=" * 70)
     print("ALL INTRADAY TRADES:")
     print("=" * 70 + "\n")
@@ -360,10 +277,9 @@ if __name__ == "__main__":
     cols_to_show = ['entry_time', 'exit_time', 'signal', 'holding_minutes', 'return_pct', 'pnl']
     print(trades_df[cols_to_show].to_string(index=False))
 
-    # (optionnel) reset les paramètres d'affichage
     pd.reset_option("display.max_rows")
     pd.reset_option("display.max_columns")
     pd.reset_option("display.width")
 
-    print("\nIntraday backtest complete!")
+    print("End")
 
