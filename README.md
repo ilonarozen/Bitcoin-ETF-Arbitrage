@@ -38,12 +38,12 @@ This project implements a **systematic arbitrage trading strategy** that identif
 --- 
 
 ## Project Structure 
-
+```
 Bitcoin-ETF-Arbitrage/
 ├── src/
-│   ├── data_collector_intraday.py      # Module 1: Data Collection
-│   ├── spread_calculator_intraday.py   # Module 2: Spread Analysis
-│   └── backtest_intraday.py            # Module 3: Backtesting 
+│   ├── data_collector_intraday.py      # Data Collection
+│   ├── spread_calculator_intraday.py   # Spread Analysis
+│   └── backtest_intraday.py            # Backtesting 
 ├── config/
 │   └── alpaca_config.py                # API
 ├── data/
@@ -53,49 +53,23 @@ Bitcoin-ETF-Arbitrage/
 │   └── intraday_trades.csv             
 ├── requirements.txt
 └── README.md
+```
 
 --- 
 
 ## Getting started 
 
-### Prerequisites 
-- Python 3.9+
-- Alpaca Markets API
+This project requires:
+- Python
+- Alpaca API
+- Standard data science libraries (pandas, numpy, requests)
 
-### Installation 
-
-1. **Clone the repository**
-```bash
-   git clone https://github.com/ilonarozen/Bitcoin-ETF-Arbitrage.git
-   cd Bitcoin-ETF-Arbitrage
-   ```
-
-2. **Install dependencies**
-   ```bash
-   pip install -r requirements.txt
-   ```
-
-3. **Configure API credentials**
-   
-   Create `config/alpaca_config.py`:
-   ```python
-   ALPACA_API_KEY = "your_api_key_here"
-   ALPACA_SECRET_KEY = "your_secret_key_here"
-   ALPACA_BASE_URL = "https://paper-api.alpaca.markets"
-   ```
-
-### Usage: 
 Run the complete pipeline:
-```bash
-# Step 1: Collect intraday data
-python src/data_collector_intraday.py
-
-# Step 2: Calculate spreads and generate trading signals
-python src/spread_calculator_intraday.py
-
-# Step 3: Run backtest
-python src/backtest_intraday.py
-```
+    ```bash
+    python src/data_collector_intraday.py
+    python src/spread_calculator_intraday.py
+    python src/backtest_intraday.py
+    ```
 
 --- 
 
@@ -131,7 +105,7 @@ with **trading costs**:
 ### 4. Risk Management 
 
 - Capital: $1M (to choose)
-- Position size: 0.1% of capital per trade
+- Position size: 0.1% of capital per trade (to choose)
 - No overnight position 
 
 --- 
@@ -152,12 +126,11 @@ with **trading costs**:
     ``` 
 
 ### Backtest 
-
-Initial Capital:    $1,000,000
-Final Capital:      $1,000,015.51
-Total PnL:          $15.51
-Win rate:           100%
-Sharpe ratio:       59.32 
+- Initial Capital:    $1,000,000
+- Final Capital:      $1,000,015.51
+- Total PnL:          $15.51
+- Win rate:           100%
+- Sharpe ratio:       59.32 
 
 --- 
 
@@ -183,10 +156,10 @@ This strategy uses free API which have limitations:
 - Coinbase: rate limits apply
 
 ### Transaction costs: 
-- This model uses simplified transaction costs. Real-world costs may vary based on:
-    - Market conditions and liquidity
-    - Order size 
-    - Exchange fees 
+This model uses simplified transaction costs. Real-world costs may vary based on:
+- Market conditions and liquidity
+- Order size 
+- Exchange fees 
 
 --- 
 
